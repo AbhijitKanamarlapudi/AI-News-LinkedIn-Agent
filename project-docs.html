@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI News LinkedIn Agent — Project Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0a0a0f;
+    --cream: #f5f0e8;
+    --warm: #ede8de;
+    --gold: #c8a96e;
+    --gold-light: #e8c98a;
+    --rust: #b84c2e;
+    --teal: #2a6b7c;
+    --teal-light: #3d8fa3;
+    --faint: rgba(200,169,110,0.08);
+    --border: rgba(200,169,110,0.25);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--cream);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s, opacity 0.3s;
+    opacity: 0.5;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 4rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+  }
+  .nav-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    font-style: italic;
+  }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.55);
+    text-decoration: none;
+    transition: color 0.25s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 8rem 4rem 6rem;
+  }
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(200,169,110,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,169,110,0.06) 1px, transparent 1px);
+    background-size: 80px 80px;
+    mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 100%);
+  }
+  .hero-glow {
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(42,107,124,0.18) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-content { position: relative; text-align: center; max-width: 900px; }
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 2.5rem;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 1.0;
+    margin-bottom: 1rem;
+    opacity: 0;
+    animation: fadeUp 0.9s 0.4s forwards;
+  }
+  .hero-title em { font-style: italic; color: var(--gold); display: block; }
+  .hero-sub {
+    font-size: 1.05rem;
+    font-weight: 200;
+    color: rgba(245,240,232,0.6);
+    max-width: 560px;
+    margin: 2rem auto 3.5rem;
+    line-height: 1.75;
+    opacity: 0;
+    animation: fadeUp 1s 0.6s forwards;
+  }
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.9rem 2.5rem;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.3s, color 0.3s;
+    opacity: 0;
+    animation: fadeUp 1s 0.8s forwards;
+  }
+  .hero-cta:hover { background: var(--gold); color: var(--ink); }
+  .hero-cta svg { width: 14px; transition: transform 0.3s; }
+  .hero-cta:hover svg { transform: translateY(3px); }
+  .hero-scroll {
+    position: absolute;
+    bottom: 3rem; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.3);
+    opacity: 0;
+    animation: fadeUp 1s 1.2s forwards;
+  }
+  .scroll-line {
+    width: 1px; height: 50px;
+    background: linear-gradient(to bottom, var(--gold), transparent);
+    animation: scrollPulse 2s ease-in-out infinite;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--border);
+    padding: 0.4rem 1.2rem;
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.5);
+    opacity: 0;
+    animation: fadeUp 0.8s 0.1s forwards;
+  }
+  .badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: badgePulse 2s infinite;
+  }
+
+  /* ── SHARED SECTION STYLES ── */
+  section { padding: 8rem 4rem; position: relative; }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .section-label::after {
+    content: ''; height: 1px; width: 60px;
+    background: var(--border);
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+  }
+  .section-title em { color: var(--gold); font-style: italic; }
+
+  /* ── FEATURES GRID (Section I) ── */
+  .features-section { max-width: 1400px; margin: 0 auto; }
+  .features-intro {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: end;
+    margin-bottom: 6rem;
+  }
+  .features-desc {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: rgba(245,240,232,0.65);
+    font-weight: 200;
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+  .feature-card {
+    background: var(--ink);
+    padding: 3rem 2.5rem;
+    position: relative;
+    transition: background 0.3s;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: ''; position: absolute; inset: 0;
+    background: var(--faint);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    font-weight: 900;
+    color: rgba(200,169,110,0.12);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    font-style: italic;
+    transition: color 0.3s;
+  }
+  .feature-card:hover .feature-num { color: rgba(200,169,110,0.22); }
+  .feature-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+  .feature-body {
+    font-size: 0.9rem;
+    line-height: 1.75;
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+  }
+  .feature-tag {
+    position: absolute;
+    top: 1.5rem; right: 1.5rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--teal-light);
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  /* ── COMPARE SECTION (Section II) ── */
+  .compare-section {
+    background: rgba(245,240,232,0.02);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .compare-inner { max-width: 1200px; margin: 0 auto; }
+  .compare-grid { display: grid; gap: 2rem; margin-top: 4rem; }
+  .compare-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5px;
+    background: var(--border);
+  }
+  .compare-box { padding: 2.5rem; position: relative; }
+  .compare-box.bad  { background: rgba(184,76,46,0.06); }
+  .compare-box.good { background: rgba(42,107,124,0.08); }
+  .compare-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .bad  .compare-label { color: #e07a5f; }
+  .good .compare-label { color: var(--teal-light); }
+  .compare-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .bad  .compare-dot { background: #e07a5f; }
+  .good .compare-dot { background: var(--teal-light); }
+  .compare-prompt {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: rgba(245,240,232,0.75);
+    background: rgba(0,0,0,0.25);
+    border-left: 2px solid rgba(255,255,255,0.1);
+    padding: 1.2rem 1.5rem;
+  }
+  .bad  .compare-prompt { border-color: rgba(184,76,46,0.4); }
+  .good .compare-prompt { border-color: rgba(42,107,124,0.5); }
+  .compare-why {
+    margin-top: 1rem;
+    font-size: 0.82rem;
+    color: rgba(245,240,232,0.45);
+    line-height: 1.65;
+    font-style: italic;
+  }
+  .compare-category {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    color: rgba(245,240,232,0.4);
+    margin-bottom: 1rem;
+  }
+
+  /* ── SETUP SECTION (Section III) ── */
+  .setup-section { max-width: 1200px; margin: 0 auto; }
+  .setup-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .setup-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.4);
+    padding: 1rem 2rem;
+    cursor: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.25s, border-color 0.25s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .setup-tab.active, .setup-tab:hover { color: var(--gold); border-bottom-color: var(--gold); }
+  .setup-pane { display: none; }
+  .setup-pane.active { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; }
+  .setup-feature {
+    background: var(--faint);
+    border: 1px solid var(--border);
+    padding: 2.5rem;
+    transition: border-color 0.3s;
+  }
+  .setup-feature:hover { border-color: rgba(200,169,110,0.5); }
+  .setup-feature-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  .setup-feature-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--cream);
+  }
+  .setup-feature-body {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: rgba(245,240,232,0.55);
+  }
+  .code-block {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(200,169,110,0.15);
+    border-left: 2px solid var(--gold);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    color: rgba(245,240,232,0.8);
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .code-comment { color: rgba(200,169,110,0.5); }
+  .inline-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85em;
+    color: var(--gold-light);
+  }
+
+  /* ── TROUBLESHOOT (Section IV) ── */
+  .trouble-section { max-width: 900px; margin: 0 auto; text-align: center; }
+  .trouble-list {
+    margin-top: 4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    text-align: left;
+  }
+  .trouble-item {
+    background: var(--ink);
+    padding: 2.5rem 3rem;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2.5rem;
+    align-items: start;
+    transition: background 0.3s;
+  }
+  .trouble-item:hover { background: rgba(200,169,110,0.04); }
+  .trouble-icon {
+    width: 52px; height: 52px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--gold);
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .trouble-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+  .trouble-body {
+    font-size: 0.88rem;
+    line-height: 1.75;
+    color: rgba(245,240,232,0.55);
+  }
+  .trouble-fix {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--teal-light);
+    margin-top: 0.85rem;
+    display: block;
+    letter-spacing: 0.03em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 4rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+  .footer-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--gold);
+    font-style: italic;
+  }
+  .footer-author {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    text-align: center;
+  }
+  .footer-author-by {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.25);
+  }
+  .footer-author-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    color: var(--gold);
+    letter-spacing: 0.03em;
+  }
+  .footer-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    color: rgba(245,240,232,0.25);
+    text-transform: uppercase;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 0 4rem;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.3; }
+    50%       { opacity: 0.8; }
+  }
+  @keyframes badgePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 1.2rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 5rem 1.5rem; }
+    .hero { padding: 8rem 1.5rem 5rem; }
+    .features-intro { grid-template-columns: 1fr; gap: 2rem; }
+    .features-grid { grid-template-columns: 1fr; }
+    .compare-pair { grid-template-columns: 1fr; }
+    .setup-pane.active { grid-template-columns: 1fr; }
+    footer { flex-direction: column; gap: 1.5rem; text-align: center; align-items: center; }
+    .divider { margin: 0 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">AI News · LinkedIn Agent</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#strategy">How It Works</a></li>
+    <li><a href="#setup">Setup</a></li>
+    <li><a href="#troubleshoot">Troubleshoot</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge"><span class="badge-dot"></span> Built by Abhijit Kanamarlapudi · 2026</div>
+    <div class="hero-eyebrow">LinkedIn Presence on Autopilot</div>
+    <h1 class="hero-title">
+      AI News<br>
+      <em>LinkedIn Agent</em>
+    </h1>
+    <p class="hero-sub">Automatically fetch the latest AI updates and publish a polished, audience-targeted LinkedIn post every day — hands-free.</p>
+    <a href="#setup" class="hero-cta">
+      View Setup Guide
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    </a>
+  </div>
+  <div class="hero-scroll">
+    <div class="scroll-line"></div>
+    Scroll
+  </div>
+</section>
+
+<!-- ── SECTION I: FEATURES ── -->
+<section id="features">
+  <div class="features-section">
+    <div class="features-intro reveal">
+      <div>
+        <div class="section-label">Section I</div>
+        <h2 class="section-title">Six <em>Core</em><br>Capabilities</h2>
+      </div>
+      <p class="features-desc">A complete end-to-end automation pipeline — from scraping the latest Anthropic research to publishing a structured, engagement-optimised LinkedIn post — with zero manual effort required after setup.</p>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <div class="feature-tag">Fetch</div>
+        <div class="feature-num">01</div>
+        <h3 class="feature-title">Scrape &amp; Rank</h3>
+        <p class="feature-body">Scrapes Anthropic News and Research pages for the latest articles. Up to 10 links per source are fetched, parsed, and scored each run.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-tag">Score</div>
+        <div class="feature-num">02</div>
+        <h3 class="feature-title">Two-Tier Scoring</h3>
+        <p class="feature-body">A relevance engine prioritises data-engineering content (Tier 1) over general AI updates (Tier 2), ensuring maximum audience impact every post.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-tag">Generate</div>
+        <div class="feature-num">03</div>
+        <h3 class="feature-title">AI-Crafted Posts</h3>
+        <p class="feature-body">Generates structured posts with a keyword-matched hook, a "why it matters" section, a first-person takeaway, and up to 6 targeted hashtags.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-tag">Publish</div>
+        <div class="feature-num">04</div>
+        <h3 class="feature-title">Direct Publishing</h3>
+        <p class="feature-body">Posts directly to your LinkedIn profile or company page via the official LinkedIn REST API using OAuth 2.0 — no browser automation needed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-tag">Track</div>
+        <div class="feature-num">05</div>
+        <h3 class="feature-title">Deduplication</h3>
+        <p class="feature-body">Every posted article URL is persisted to <span class="inline-code">posted_articles.json</span>. The same article is never published twice, automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-tag">Extend</div>
+        <div class="feature-num">06</div>
+        <h3 class="feature-title">Fully Configurable</h3>
+        <p class="feature-body">Schedule interval, scoring thresholds, news sources, hooks, takeaways, and hashtag patterns are all adjustable without rewriting core logic.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SECTION II: HOW IT WORKS (COMPARE) ── -->
+<section id="strategy" class="compare-section">
+  <div class="compare-inner">
+    <div class="reveal">
+      <div class="section-label">Section II</div>
+      <h2 class="section-title">Manual vs. <em>Automated</em><br>Posting</h2>
+    </div>
+    <div class="compare-grid">
+
+      <div class="reveal">
+        <div class="compare-category">1 · Time Investment</div>
+        <div class="compare-pair">
+          <div class="compare-box bad">
+            <div class="compare-label"><span class="compare-dot"></span> Without Agent</div>
+            <div class="compare-prompt">Browse Anthropic news, read the article, draft a post, edit for tone, add hashtags — 20 to 30 minutes every single day.</div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-label"><span class="compare-dot"></span> With Agent</div>
+            <div class="compare-prompt">python -m src.ai_agent</div>
+            <div class="compare-why">One command. Runs in under 60 seconds. The post is live on LinkedIn before your coffee is ready.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="compare-category">2 · Content Quality</div>
+        <div class="compare-pair">
+          <div class="compare-box bad">
+            <div class="compare-label"><span class="compare-dot"></span> Without Agent</div>
+            <div class="compare-prompt">Generic take on the article, inconsistent format, hashtags chosen by gut feeling — impact varies wildly day to day.</div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-label"><span class="compare-dot"></span> With Agent</div>
+            <div class="compare-prompt">"As a data developer, the Claude API just became a tool you need to know about."
+
+→ Article Title
+
+What this means for data teams:
+[description] ...
+
+My take: [takeaway]
+
+#Claude #GenerativeAI #DataEngineering #ClaudeAPI</div>
+            <div class="compare-why">Every post follows the same engagement-optimised template — consistent, professional, and audience-targeted every time.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="compare-category">3 · Posting Consistency</div>
+        <div class="compare-pair">
+          <div class="compare-box bad">
+            <div class="compare-label"><span class="compare-dot"></span> Without Agent</div>
+            <div class="compare-prompt">Posting drops off when you're in back-to-back meetings, on vacation, or simply forget. LinkedIn presence becomes unreliable.</div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-label"><span class="compare-dot"></span> With Agent</div>
+            <div class="compare-prompt"><span class="code-comment"># Once daily (default)</span>
+SCHEDULE_INTERVAL_HOURS=24
+<span class="code-comment"># Twice daily</span>
+SCHEDULE_INTERVAL_HOURS=12
+<span class="code-comment"># Once a week</span>
+SCHEDULE_INTERVAL_HOURS=168</div>
+            <div class="compare-why">The built-in APScheduler runs on your configured cadence — whether you're available or not.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal">
+        <div class="compare-category">4 · Article Discovery</div>
+        <div class="compare-pair">
+          <div class="compare-box bad">
+            <div class="compare-label"><span class="compare-dot"></span> Without Agent</div>
+            <div class="compare-prompt">You only see articles that surface in your LinkedIn feed or what you happen to find when manually visiting the Anthropic website.</div>
+          </div>
+          <div class="compare-box good">
+            <div class="compare-label"><span class="compare-dot"></span> With Agent</div>
+            <div class="compare-prompt">Scrapes anthropic.com/news and anthropic.com/research simultaneously. Up to 10 articles per source scored and ranked per run — nothing is ever missed.</div>
+            <div class="compare-why">The two-tier scoring system always surfaces the most technically relevant article first.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SECTION III: SETUP GUIDE (TABS) ── -->
+<section id="setup">
+  <div class="setup-section">
+    <div class="reveal">
+      <div class="section-label">Section III</div>
+      <h2 class="section-title">Setup <em>Guide</em></h2>
+    </div>
+    <div class="setup-tabs reveal">
+      <button class="setup-tab active" onclick="switchSetupTab(this,'prereqs')">Prerequisites</button>
+      <button class="setup-tab" onclick="switchSetupTab(this,'install')">Install</button>
+      <button class="setup-tab" onclick="switchSetupTab(this,'configure')">Configure</button>
+      <button class="setup-tab" onclick="switchSetupTab(this,'run')">Run</button>
+    </div>
+
+    <!-- Tab: Prerequisites -->
+    <div id="pane-prereqs" class="setup-pane active reveal">
+      <div class="setup-feature">
+        <div class="setup-feature-num">Requirement 01</div>
+        <h3 class="setup-feature-title">Python 3.9 or Later</h3>
+        <p class="setup-feature-body">The agent uses modern Python features unavailable in earlier versions. Check your version before starting — upgrade via python.org if needed.</p>
+        <div class="code-block">python3 --version</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Requirement 02</div>
+        <h3 class="setup-feature-title">LinkedIn Developer App</h3>
+        <p class="setup-feature-body">Create an app at linkedin.com/developers. Request these OAuth 2.0 scopes: <span class="inline-code">w_member_social</span>, <span class="inline-code">r_liteprofile</span>, <span class="inline-code">openid</span>, <span class="inline-code">profile</span>. To post as a company page, also add <span class="inline-code">w_organization_social</span>.</p>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Requirement 03</div>
+        <h3 class="setup-feature-title">OAuth 2.0 Access Token</h3>
+        <p class="setup-feature-body">Use LinkedIn's OAuth 2.0 Token Generator in your app's Auth tab to generate a token with the scopes above. Tokens expire after 60 days — return to this step to refresh when needed.</p>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Requirement 04</div>
+        <h3 class="setup-feature-title">pip Package Manager</h3>
+        <p class="setup-feature-body">Ensure pip is available alongside your Python installation. All six runtime dependencies install in a single command with no compilation required.</p>
+        <div class="code-block">pip --version</div>
+      </div>
+    </div>
+
+    <!-- Tab: Install -->
+    <div id="pane-install" class="setup-pane reveal">
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 01</div>
+        <h3 class="setup-feature-title">Download the Project</h3>
+        <p class="setup-feature-body">Unzip the project archive, or clone from the repository if hosted on GitHub. Then navigate into the project directory.</p>
+        <div class="code-block">git clone &lt;repository-url&gt;
+cd "AI Agent LinkedIn"</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 02</div>
+        <h3 class="setup-feature-title">Create a Virtual Environment</h3>
+        <p class="setup-feature-body">Isolates the project's dependencies from your system Python. After activation you should see <span class="inline-code">(.venv)</span> at the start of your terminal prompt.</p>
+        <div class="code-block"><span class="code-comment"># Create</span>
+python3 -m venv .venv
+<span class="code-comment"># Activate (macOS / Linux)</span>
+source .venv/bin/activate
+<span class="code-comment"># Activate (Windows PowerShell)</span>
+.venv\Scripts\Activate.ps1</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 03</div>
+        <h3 class="setup-feature-title">Install Dependencies</h3>
+        <p class="setup-feature-body">Installs all six runtime libraries: <span class="inline-code">requests</span>, <span class="inline-code">beautifulsoup4</span>, <span class="inline-code">lxml</span>, <span class="inline-code">python-dotenv</span>, <span class="inline-code">APScheduler</span>, and <span class="inline-code">linkedin-api</span>.</p>
+        <div class="code-block">pip install -r requirements.txt</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 04</div>
+        <h3 class="setup-feature-title">Optional Dev Tools</h3>
+        <p class="setup-feature-body">Install <span class="inline-code">pytest</span>, <span class="inline-code">black</span>, and <span class="inline-code">flake8</span> if you plan to run the test suite or contribute code changes.</p>
+        <div class="code-block">pip install ".[dev]"</div>
+      </div>
+    </div>
+
+    <!-- Tab: Configure -->
+    <div id="pane-configure" class="setup-pane reveal">
+      <div class="setup-feature">
+        <div class="setup-feature-num">Config 01</div>
+        <h3 class="setup-feature-title">Create Your .env File</h3>
+        <p class="setup-feature-body">Copy the provided example template and fill in your real values. The <span class="inline-code">.env</span> file is excluded from git via <span class="inline-code">.gitignore</span> — never commit it.</p>
+        <div class="code-block">cp .env.example .env</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Config 02</div>
+        <h3 class="setup-feature-title">Minimal Working Configuration</h3>
+        <p class="setup-feature-body">At minimum you need your LinkedIn access token. Keep <span class="inline-code">DRY_RUN=true</span> while verifying your setup — nothing is published in this mode.</p>
+        <div class="code-block">LINKEDIN_ACCESS_TOKEN=AQV...your_token
+LINKEDIN_DRY_RUN=true
+SCHEDULE_INTERVAL_HOURS=24</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Config 03</div>
+        <h3 class="setup-feature-title">Company Page (Optional)</h3>
+        <p class="setup-feature-body">To post as a LinkedIn Company Page instead of your personal profile, add the <span class="inline-code">w_organization_social</span> scope and provide your page ID.</p>
+        <div class="code-block">LINKEDIN_PAGE_ID=123456789
+<span class="code-comment"># OR use the full URN directly</span>
+LINKEDIN_PAGE_URN=urn:li:organization:123456789</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Config 04</div>
+        <h3 class="setup-feature-title">Author URN Resolution</h3>
+        <p class="setup-feature-body">The agent auto-resolves your identity via the <span class="inline-code">/userinfo</span> endpoint. If auto-resolution fails, set your URN manually. Find it by calling the userinfo API with your token.</p>
+        <div class="code-block">curl -H "Authorization: Bearer YOUR_TOKEN" \
+  https://api.linkedin.com/v2/userinfo
+<span class="code-comment"># Use the 'sub' field value:</span>
+LINKEDIN_AUTHOR_URN=urn:li:person:&lt;sub&gt;</div>
+      </div>
+    </div>
+
+    <!-- Tab: Run -->
+    <div id="pane-run" class="setup-pane reveal">
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 01</div>
+        <h3 class="setup-feature-title">Run a Dry-Run First</h3>
+        <p class="setup-feature-body">Verify your entire setup without publishing anything to LinkedIn. You should see article candidates, scores, and a full post content preview in the terminal output.</p>
+        <div class="code-block">LINKEDIN_DRY_RUN=true python -m src.ai_agent</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 02</div>
+        <h3 class="setup-feature-title">Publish Your First Real Post</h3>
+        <p class="setup-feature-body">Set <span class="inline-code">LINKEDIN_DRY_RUN=false</span> in your <span class="inline-code">.env</span>, then run the agent. The article URL is saved to <span class="inline-code">posted_articles.json</span> after each successful post.</p>
+        <div class="code-block">python -m src.ai_agent</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 03</div>
+        <h3 class="setup-feature-title">Run Once (No Internal Scheduler)</h3>
+        <p class="setup-feature-body">Ideal for use with macOS <span class="inline-code">launchd</span>, Linux cron, or GitHub Actions. Triggers a single post and exits immediately.</p>
+        <div class="code-block">python -c "from src.ai_agent import \
+  AINewsLinkedInAgent; \
+  AINewsLinkedInAgent().run_once()"</div>
+      </div>
+      <div class="setup-feature">
+        <div class="setup-feature-num">Step 04</div>
+        <h3 class="setup-feature-title">Schedule via macOS cron</h3>
+        <p class="setup-feature-body">Add to your crontab with <span class="inline-code">crontab -e</span> to post automatically at 9 AM every morning — no terminal session required.</p>
+        <div class="code-block">0 9 * * * cd "/path/to/AI Agent LinkedIn" \
+  && .venv/bin/python -m src.ai_agent</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SECTION IV: TROUBLESHOOT ── -->
+<section id="troubleshoot">
+  <div class="trouble-section">
+    <div class="reveal">
+      <div class="section-label" style="justify-content:center;">Section IV</div>
+      <h2 class="section-title" style="text-align:center;">Troubleshooting<br><em>&amp; Common Errors</em></h2>
+    </div>
+    <div class="trouble-list reveal">
+
+      <div class="trouble-item">
+        <div class="trouble-icon">403</div>
+        <div>
+          <h3 class="trouble-title">Organization Permissions Error</h3>
+          <p class="trouble-body">You are posting as a company page but the <span class="inline-code">w_organization_social</span> scope is missing from your token, or <span class="inline-code">LINKEDIN_PAGE_ID</span> is not set in your <span class="inline-code">.env</span>. Ensure your LinkedIn account is an Admin of the company page.</p>
+          <span class="trouble-fix">→ Add w_organization_social scope · Regenerate token · Set LINKEDIN_PAGE_ID</span>
+        </div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-icon">401</div>
+        <div>
+          <h3 class="trouble-title">Unauthorised — Token Expired</h3>
+          <p class="trouble-body">LinkedIn access tokens expire after 60 days. Return to the OAuth 2.0 Token Generator in your app's Auth tab, generate a new token with the same scopes, and update <span class="inline-code">LINKEDIN_ACCESS_TOKEN</span> in your <span class="inline-code">.env</span>.</p>
+          <span class="trouble-fix">→ Regenerate token every 60 days · Update LINKEDIN_ACCESS_TOKEN in .env</span>
+        </div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-icon">no<br>art.</div>
+        <div>
+          <h3 class="trouble-title">No Articles Found</h3>
+          <p class="trouble-body">The Anthropic website may have changed its HTML structure, the request timed out, or all articles were filtered by the noise or scoring thresholds. Check your internet connection, then inspect <span class="inline-code">NewsFetcher._extract_article_urls()</span> for structural changes.</p>
+          <span class="trouble-fix">→ Check connectivity · Inspect _extract_article_urls() · Lower DATA_DEV_MIN_SCORE</span>
+        </div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-icon">dup.</div>
+        <div>
+          <h3 class="trouble-title">Already Posted — 0 Posts Published</h3>
+          <p class="trouble-body">The top-ranked articles are already recorded in <span class="inline-code">posted_articles.json</span>. This is expected behaviour — the deduplication system is working correctly. Wait for Anthropic to publish new content, or delete the file for testing purposes only.</p>
+          <span class="trouble-fix">→ Wait for new articles · Testing only: rm posted_articles.json</span>
+        </div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-icon">dry</div>
+        <div>
+          <h3 class="trouble-title">Posts Not Appearing on LinkedIn</h3>
+          <p class="trouble-body">The agent runs without errors but nothing is published to your profile. <span class="inline-code">LINKEDIN_DRY_RUN</span> is set to <span class="inline-code">true</span> (the default for safety). Set it to <span class="inline-code">false</span> in your <span class="inline-code">.env</span> to go live.</p>
+          <span class="trouble-fix">→ Set LINKEDIN_DRY_RUN=false in .env</span>
+        </div>
+      </div>
+
+      <div class="trouble-item">
+        <div class="trouble-icon">mod.</div>
+        <div>
+          <h3 class="trouble-title">ModuleNotFoundError</h3>
+          <p class="trouble-body">Dependencies are not installed, or Python is being invoked from outside the virtual environment. Activate the venv first, then re-run the install step before launching the agent.</p>
+          <span class="trouble-fix">→ source .venv/bin/activate · pip install -r requirements.txt</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">AI News · LinkedIn Agent</div>
+  <div class="footer-author">
+    <span class="footer-author-by">Created by</span>
+    <span class="footer-author-name">Abhijit Kanamarlapudi</span>
+  </div>
+  <div class="footer-note">Project Documentation · 2026 · Python Automation</div>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring   = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top  = my + 'px';
+  });
+
+  (function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top  = ry + 'px';
+    requestAnimationFrame(animateRing);
+  })();
+
+  document.querySelectorAll('a, button, .feature-card, .trouble-item, .setup-feature').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width  = '16px';
+      cursor.style.height = '16px';
+      ring.style.width    = '52px';
+      ring.style.height   = '52px';
+      ring.style.opacity  = '0.9';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width  = '10px';
+      cursor.style.height = '10px';
+      ring.style.width    = '36px';
+      ring.style.height   = '36px';
+      ring.style.opacity  = '0.5';
+    });
+  });
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // Setup tab switching
+  function switchSetupTab(btn, id) {
+    document.querySelectorAll('.setup-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.setup-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-' + id).classList.add('active');
+  }
+</script>
+</body>
+</html>
