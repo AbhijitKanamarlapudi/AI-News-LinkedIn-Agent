@@ -1102,6 +1102,11 @@ LINKEDIN_AUTHOR_URN=urn:li:person:&lt;sub&gt;</div>
 </footer>
 
 <script>
+  // Always start at the top of the page — prevents mobile browsers from
+  // restoring a previous scroll position on reload or revisit.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.addEventListener('load', () => window.scrollTo(0, 0));
+
   // Custom cursor — desktop only (skip on touch devices)
   const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
   const cursor = document.getElementById('cursor');
