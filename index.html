@@ -565,18 +565,109 @@
   }
   .reveal.visible { opacity: 1; transform: none; }
 
-  /* ── RESPONSIVE ── */
+  /* ── HAMBURGER BUTTON (hidden on desktop) ── */
+  .nav-hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    z-index: 600;
+    position: relative;
+  }
+  .nav-hamburger span {
+    display: block;
+    width: 22px;
+    height: 1.5px;
+    background: var(--gold);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .nav-hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .nav-hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+  /* ── MOBILE SLIDE-DOWN MENU (hidden on desktop) ── */
+  .nav-mobile-menu {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(10,10,15,0.97);
+    backdrop-filter: blur(20px);
+    z-index: 490;
+    padding: 5rem 2rem 1.5rem;
+    flex-direction: column;
+    border-bottom: 1px solid var(--border);
+    transform: translateY(-110%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .nav-mobile-menu.open { transform: translateY(0); }
+  .nav-mobile-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(245,240,232,0.65);
+    text-decoration: none;
+    padding: 1.1rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    transition: color 0.25s, padding-left 0.25s;
+  }
+  .nav-mobile-link:last-child { border-bottom: none; }
+  .nav-mobile-link:hover { color: var(--gold); padding-left: 6px; }
+
+  /* ── RESPONSIVE: LAYOUT ── */
   @media (max-width: 900px) {
-    nav { padding: 1.2rem 1.5rem; }
+    nav { padding: 1.1rem 1.5rem; }
     .nav-links { display: none; }
+    .nav-hamburger { display: flex; }
+    .nav-mobile-menu { display: flex; }
+
     section { padding: 5rem 1.5rem; }
     .hero { padding: 8rem 1.5rem 5rem; }
+    .hero-sub { font-size: 0.95rem; margin-bottom: 2.5rem; }
+    .hero-scroll { display: none; }
+
     .features-intro { grid-template-columns: 1fr; gap: 2rem; }
     .features-grid { grid-template-columns: 1fr; }
+
     .compare-pair { grid-template-columns: 1fr; }
-    .setup-pane.active { grid-template-columns: 1fr; }
-    footer { flex-direction: column; gap: 1.5rem; text-align: center; align-items: center; }
+    .compare-box { padding: 1.75rem; }
+
+    .setup-tabs { flex-wrap: wrap; border-bottom: none; margin-bottom: 2rem; }
+    .setup-tab {
+      flex: 1 1 auto;
+      min-height: 44px;
+      font-size: 0.65rem;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--border);
+      border-bottom: 2px solid transparent;
+      text-align: center;
+    }
+    .setup-tab.active, .setup-tab:hover { border-color: var(--gold); }
+    .setup-pane.active { grid-template-columns: 1fr; gap: 1.5rem; }
+    .setup-feature { padding: 1.75rem; }
+
+    .trouble-item { padding: 1.75rem 1.25rem; gap: 1rem; }
+    .trouble-icon { width: 42px; height: 42px; font-size: 0.55rem; }
+
+    footer { flex-direction: column; gap: 1.5rem; text-align: center; align-items: center; padding: 3rem 1.5rem; }
     .divider { margin: 0 1.5rem; }
+  }
+
+  /* ── RESPONSIVE: TOUCH DEVICES (cursor + tap targets) ── */
+  @media (pointer: coarse) {
+    body { cursor: auto; }
+    .cursor, .cursor-ring { display: none !important; }
+    .setup-tab { cursor: pointer; }
+    .hero-cta { min-height: 44px; padding: 1rem 2.5rem; }
+    .feature-card { padding: 2rem 1.75rem; }
+    .nav-mobile-link { min-height: 48px; }
   }
 </style>
 </head>
@@ -594,7 +685,18 @@
     <li><a href="#setup">Setup</a></li>
     <li><a href="#troubleshoot">Troubleshoot</a></li>
   </ul>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<!-- ── MOBILE NAV MENU ── -->
+<div class="nav-mobile-menu" id="navMobileMenu">
+  <a href="#features"     class="nav-mobile-link">Features</a>
+  <a href="#strategy"     class="nav-mobile-link">How It Works</a>
+  <a href="#setup"        class="nav-mobile-link">Setup</a>
+  <a href="#troubleshoot" class="nav-mobile-link">Troubleshoot</a>
+</div>
 
 <!-- ── HERO ── -->
 <section class="hero" id="home">
@@ -988,39 +1090,62 @@ LINKEDIN_AUTHOR_URN=urn:li:person:&lt;sub&gt;</div>
 </footer>
 
 <script>
-  // Custom cursor
+  // Custom cursor — desktop only (skip on touch devices)
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
   const cursor = document.getElementById('cursor');
   const ring   = document.getElementById('cursorRing');
-  let mx = 0, my = 0, rx = 0, ry = 0;
 
-  document.addEventListener('mousemove', e => {
-    mx = e.clientX; my = e.clientY;
-    cursor.style.left = mx + 'px';
-    cursor.style.top  = my + 'px';
+  if (!isTouchDevice) {
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx + 'px';
+      cursor.style.top  = my + 'px';
+    });
+
+    (function animateRing() {
+      rx += (mx - rx) * 0.12;
+      ry += (my - ry) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top  = ry + 'px';
+      requestAnimationFrame(animateRing);
+    })();
+
+    document.querySelectorAll('a, button, .feature-card, .trouble-item, .setup-feature').forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width  = '16px';
+        cursor.style.height = '16px';
+        ring.style.width    = '52px';
+        ring.style.height   = '52px';
+        ring.style.opacity  = '0.9';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width  = '10px';
+        cursor.style.height = '10px';
+        ring.style.width    = '36px';
+        ring.style.height   = '36px';
+        ring.style.opacity  = '0.5';
+      });
+    });
+  }
+
+  // Hamburger menu toggle — mobile only
+  const hamburger   = document.getElementById('navHamburger');
+  const mobileMenu  = document.getElementById('navMobileMenu');
+
+  hamburger.addEventListener('click', () => {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    document.body.style.overflow = isOpen ? 'hidden' : '';
   });
 
-  (function animateRing() {
-    rx += (mx - rx) * 0.12;
-    ry += (my - ry) * 0.12;
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
-    requestAnimationFrame(animateRing);
-  })();
-
-  document.querySelectorAll('a, button, .feature-card, .trouble-item, .setup-feature').forEach(el => {
-    el.addEventListener('mouseenter', () => {
-      cursor.style.width  = '16px';
-      cursor.style.height = '16px';
-      ring.style.width    = '52px';
-      ring.style.height   = '52px';
-      ring.style.opacity  = '0.9';
-    });
-    el.addEventListener('mouseleave', () => {
-      cursor.style.width  = '10px';
-      cursor.style.height = '10px';
-      ring.style.width    = '36px';
-      ring.style.height   = '36px';
-      ring.style.opacity  = '0.5';
+  // Close mobile menu when a link is tapped
+  mobileMenu.querySelectorAll('.nav-mobile-link').forEach(link => {
+    link.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      hamburger.classList.remove('open');
+      document.body.style.overflow = '';
     });
   });
 
